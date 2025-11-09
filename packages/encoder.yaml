@@ -1,0 +1,240 @@
+# ----------------------------------------------------------------------|
+# Include if using encoder for volume and media control                 |
+# ----------------------------------------------------------------------|
+
+# Rotary encoder button for media control
+binary_sensor:
+  - platform: gpio
+    name: "${friendly_name} Encoder Button"
+    id: encoder_button
+    pin:
+      number: $encoder_button_pin
+      mode: INPUT_PULLUP
+      inverted: true
+    on_multi_click:
+      # Triple click action - previous track
+      - timing:
+          - ON for at most 1s
+          - OFF for at most 0.25s
+          - ON for at most 1s
+          - OFF for at most 0.25s
+          - ON for at most 1s
+        then:
+          - script.execute: triple_click
+      
+      # Double click action - next track
+      - timing:
+          - ON for at most 1s
+          - OFF for at most 0.25s
+          - ON for at most 1s
+          - OFF for at least 0.25s
+        then:
+          - script.execute: double_click
+
+      # Long click action - restart last played URL
+      - timing:
+          - ON for 0.5s to 2s
+          - OFF for at least 50ms
+        then:
+          - script.execute: long_click
+
+      # Single click action - play/pause
+      - timing:
+          - ON for at most 0.5s
+          - OFF for at least 260ms
+        then:
+          - script.execute: single_click
+
+# Encoder control scripts
+script:
+  # Increase volume by configured step
+  - id: volume_up
+    then:
+      - lambda: |-
+            // increase and clamp
+            id(volume_level) += ${volume_step};
+            if (id(volume_level) > ${max_volume}) id(volume_level) = ${max_volume};
+      - homeassistant.service:
+          service: media_player.volume_set
+          data:
+            entity_id: ${media_player_entity}
+            volume_level: !lambda |-
+              return id(volume_level);
+      - sensor.template.publish:
+          id: ha_volume_level_sensor
+          state: !lambda 'return id(volume_level);'
+      - light.turn_on:
+          id: activity_led
+          brightness: ${led_brightness}
+          red: 0%
+          green: 100%
+          blue: 0%
+          flash_length: 100ms
+      - text_sensor.template.publish:
+          id: tagtune_status
+          state: "volume up"
+  
+  # Decrease volume by configured step
+  - id: volume_down
+    then:
+      - lambda: |-
+            // decrease and clamp
+            id(volume_level) -= ${volume_step};
+            if (id(volume_level) < 0.0) id(volume_level) = 0.0;
+      - homeassistant.service:
+          service: media_player.volume_set
+          data:
+            entity_id: ${media_player_entity}
+            volume_level: !lambda |-
+              return id(volume_level);
+      - sensor.template.publish:
+          id: ha_volume_level_sensor
+          state: !lambda 'return id(volume_level);'
+      - light.turn_on:
+          id: activity_led
+          brightness: ${led_brightness}
+          red: 100%
+          green: 0%
+          blue: 0%
+          flash_length: 100ms
+      - text_sensor.template.publish:
+          id: tagtune_status
+          state: "volume down"
+  
+  # Triple click action - previous track
+  - id: triple_click
+    then:
+      - homeassistant.service:
+          service: media_player.media_previous_track
+          data:
+            entity_id: ${media_player_entity}
+      # Triple flash feedback
+      - light.turn_on:
+          id: activity_led
+          brightness: ${led_brightness}
+          red: 0%
+          green: 0%
+          blue: 100%
+          flash_length: 500ms
+      - delay: 500ms
+      - light.turn_on:
+          id: activity_led
+          brightness: ${led_brightness}
+          red: 0%
+          green: 0%
+          blue: 100%
+          flash_length: 500ms
+      - delay: 500ms
+      - light.turn_on:
+          id: activity_led
+          brightness: ${led_brightness}
+          red: 0%
+          green: 0%
+          blue: 100%
+          flash_length: 500ms
+      - text_sensor.template.publish:
+          id: tagtune_status
+          state: "previous track"
+  
+  # Double click action - next track
+  - id: double_click
+    then:
+      - homeassistant.service:
+          service: media_player.media_next_track
+          data:
+            entity_id: ${media_player_entity}
+      # Double flash feedback
+      - light.turn_on:
+          id: activity_led
+          brightness: ${led_brightness}
+          red: 0%
+          green: 0%
+          blue: 100%
+          flash_length: 500ms
+      - delay: 500ms
+      - light.turn_on:
+          id: activity_led
+          brightness: ${led_brightness}
+          red: 0%
+          green: 0%
+          blue: 100%
+          flash_length: 500ms
+      - text_sensor.template.publish:
+          id: tagtune_status
+          state: "next track"
+  
+  # Single click action - play/pause
+  - id: single_click
+    then:
+      - homeassistant.service:
+          service: media_player.media_play_pause
+          data:
+            entity_id: ${media_player_entity}
+      # Single flash feedback
+      - light.turn_on:
+          id: activity_led
+          brightness: ${led_brightness}
+          red: 0%
+          green: 0%
+          blue: 100%
+          flash_length: 500ms
+      - text_sensor.template.publish:
+          id: tagtune_status
+          state: "play/pause"
+  
+  # Long click action - restart last played URL
+  - id: long_click
+    then:
+    # Long flash feedback
+    - light.turn_on:
+        id: activity_led
+        brightness: ${led_brightness}
+        red: 0%
+        green: 0%
+        blue: 100%
+        flash_length: 1000ms
+    - text_sensor.template.publish:
+        id: tagtune_status
+        state: "restart last URL"
+    - if:
+        condition:
+          lambda: 'return !id(last_played_url).empty();'
+        then:
+          - logger.log: 
+              format: "Long press - restarting %s"
+              args: ['id(last_played_info).c_str()']
+          - homeassistant.service:
+              service: media_player.play_media
+              data:
+                entity_id: ${media_player_entity}
+                media_content_type: music
+                media_content_id: !lambda |-
+                  return id(last_played_url);
+        else:
+          - logger.log: "Long press - no URL to restart"
+
+# Volume sensor
+sensor:
+  # Current volume level exposed to Home Assistant
+  - platform: template
+    name: "${friendly_name} Volume Level"
+    id: ha_volume_level_sensor
+    unit_of_measurement: ""
+    accuracy_decimals: 2
+    icon: mdi:volume-high
+    lambda: |-
+      return id(volume_level);
+  # Rotary encoder for volume control
+  - platform: rotary_encoder
+    name: "${friendly_name} Volume Encoder"
+    id: volume_encoder
+    pin_a: $encoder_pin_a
+    pin_b: $encoder_pin_b
+    resolution: 4
+    # on clockwise / anticlockwise we update a stored volume_level and call Home Assistant
+    on_clockwise:
+      then:
+        - script.execute: volume_up
+    on_anticlockwise:
+      then:
+        - script.execute: volume_down

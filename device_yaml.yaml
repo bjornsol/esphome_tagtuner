@@ -1,0 +1,42 @@
+# ------------------------------------------------|
+# TagTuner ESPHome device config file             |
+# ------------------------------------------------|
+
+# Settings for the TagTuner device
+substitutions:                                    
+  # Name and friendly name of the device ---------|
+  name: tagreader-ossisen                        #| 
+  friendly_name: TagReader Ossisen               #|
+  # Home Assistant media_player entity -----------|
+  # Set this to the Home Assistant media_player   |
+  # entity you want to control.                   |
+  # Example: media_player.living_room_sonos       |
+  media_player_entity: media_player.eskild       #|
+  # Encoder pins ---------------------------------|
+  encoder_pin_a: GPIO18                          #|
+  encoder_pin_b: GPIO16                          #|       
+  encoder_button_pin: GPIO17                     #|
+  # ----------------------------------------------|
+  # Volume step per encoder 'click' (0.0 - 1.0) --|
+  volume_step: '0.005'                           #|
+  # ----------------------------------------------|
+  # PN532 SPI interface pins ---------------------|
+  spi_clk_pin: GPIO12                            #| 
+  spi_mosi_pin: GPIO11                           #| 
+  spi_miso_pin: GPIO13                           #|
+  # ----------------------------------------------|
+  # PN532 CS pin ---------------------------------|
+  spi_cs_pin: GPIO05                             #|
+  # ----------------------------------------------|
+  # Activity LED pin -----------------------------|
+  light_pin: GPIO2                               #|
+  led_brightness: '30%'                          #|
+  # Max volume limit -----------------------------|
+  max_volume: '0.7'                              #|
+  # ----------------------------------------------|
+
+# Include required and optional packages
+packages:
+  tagtuner: !include packages/tagtuner.yaml
+# ONLY INCLUDE IF USING ENCODER ------------------|
+  encoder: !include packages/encoder.yaml
