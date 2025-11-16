@@ -14,7 +14,8 @@ substitutions:
   media_player_entity: media_player.eskild
   # Home Assistant area entity 
   # Set this to the area you want to control   
-  # media players in.           
+  # media players in. Set area_not_player to
+  # true to use area_entity instead of media_player_entity
   area_entity: eskilds_rom_kontor
   # Encoder pins 
   encoder_pin_a: GPIO06
