@@ -54,12 +54,29 @@ script:
             // increase and clamp
             id(volume_level) += ${volume_step};
             if (id(volume_level) > ${max_volume}) id(volume_level) = ${max_volume};
-      - homeassistant.service:
-          service: media_player.volume_set
-          data:
-            entity_id: ${media_player_entity}
-            volume_level: !lambda |-
-              return id(volume_level);
+      - if:
+          condition:
+            lambda: 'return !${ha_automation_events};'
+          then:
+            - if:
+                condition:
+                  lambda: 'return ${area_not_player};'
+                then:
+                  - homeassistant.service:
+                      service: media_player.volume_set
+                      data:
+                        area_id: ${area_entity}
+                        volume_level: !lambda |-
+                          return id(volume_level);
+                else:
+                  - homeassistant.service:
+                      service: media_player.volume_set
+                      data:
+                        entity_id: ${media_player_entity}
+                        volume_level: !lambda |-
+                          return id(volume_level);
+          else:
+            - logger.log: "HA automations enabled - skipping volume_set"
       - sensor.template.publish:
           id: ha_volume_level_sensor
           state: !lambda 'return id(volume_level);'
@@ -81,12 +98,29 @@ script:
             // decrease and clamp
             id(volume_level) -= ${volume_step};
             if (id(volume_level) < 0.0) id(volume_level) = 0.0;
-      - homeassistant.service:
-          service: media_player.volume_set
-          data:
-            entity_id: ${media_player_entity}
-            volume_level: !lambda |-
-              return id(volume_level);
+      - if:
+          condition:
+            lambda: 'return !${ha_automation_events};'
+          then:
+            - if:
+                condition:
+                  lambda: 'return ${area_not_player};'
+                then:
+                  - homeassistant.service:
+                      service: media_player.volume_set
+                      data:
+                        area_id: ${area_entity}
+                        volume_level: !lambda |-
+                          return id(volume_level);
+                else:
+                  - homeassistant.service:
+                      service: media_player.volume_set
+                      data:
+                        entity_id: ${media_player_entity}
+                        volume_level: !lambda |-
+                          return id(volume_level);
+          else:
+            - logger.log: "HA automations enabled - skipping volume_set"
       - sensor.template.publish:
           id: ha_volume_level_sensor
           state: !lambda 'return id(volume_level);'
@@ -104,10 +138,25 @@ script:
   # Triple click action - previous track
   - id: triple_click
     then:
-      - homeassistant.service:
-          service: media_player.media_previous_track
-          data:
-            entity_id: ${media_player_entity}
+      - if:
+          condition:
+            lambda: 'return !${ha_automation_events};'
+          then:
+            - if:
+                condition:
+                  lambda: 'return ${area_not_player};'
+                then:
+                  - homeassistant.service:
+                      service: media_player.media_previous_track
+                      data:
+                        area_id: ${area_entity}
+                else:
+                  - homeassistant.service:
+                      service: media_player.media_previous_track
+                      data:
+                        entity_id: ${media_player_entity}
+          else:
+            - logger.log: "HA automations enabled - skipping previous_track"
       # Triple flash feedback
       - light.turn_on:
           id: activity_led
@@ -139,10 +188,25 @@ script:
   # Double click action - next track
   - id: double_click
     then:
-      - homeassistant.service:
-          service: media_player.media_next_track
-          data:
-            entity_id: ${media_player_entity}
+      - if:
+          condition:
+            lambda: 'return !${ha_automation_events};'
+          then:
+            - if:
+                condition:
+                  lambda: 'return ${area_not_player};'
+                then:
+                  - homeassistant.service:
+                      service: media_player.media_next_track
+                      data:
+                        area_id: ${area_entity}
+                else:
+                  - homeassistant.service:
+                      service: media_player.media_next_track
+                      data:
+                        entity_id: ${media_player_entity}
+          else:
+            - logger.log: "HA automations enabled - skipping next_track"
       # Double flash feedback
       - light.turn_on:
           id: activity_led
@@ -166,10 +230,25 @@ script:
   # Single click action - play/pause
   - id: single_click
     then:
-      - homeassistant.service:
-          service: media_player.media_play_pause
-          data:
-            entity_id: ${media_player_entity}
+      - if:
+          condition:
+            lambda: 'return !${ha_automation_events};'
+          then:
+            - if:
+                condition:
+                  lambda: 'return ${area_not_player};'
+                then:
+                  - homeassistant.service:
+                      service: media_player.media_play_pause
+                      data:
+                        area_id: ${area_entity}
+                else:
+                  - homeassistant.service:
+                      service: media_player.media_play_pause
+                      data:
+                        entity_id: ${media_player_entity}
+          else:
+            - logger.log: "HA automations enabled - skipping play/pause"
       # Single flash feedback
       - light.turn_on:
           id: activity_led
@@ -203,13 +282,31 @@ script:
           - logger.log: 
               format: "Long press - restarting %s"
               args: ['id(last_played_info).c_str()']
-          - homeassistant.service:
-              service: media_player.play_media
-              data:
-                entity_id: ${media_player_entity}
-                media_content_type: music
-                media_content_id: !lambda |-
-                  return id(last_played_url);
+          - if:
+              condition:
+                lambda: 'return !${ha_automation_events};'
+              then:
+                - if:
+                    condition:
+                      lambda: 'return ${area_not_player};'
+                    then:
+                      - homeassistant.service:
+                          service: media_player.play_media
+                          data:
+                            area_id: ${area_entity}
+                            media_content_type: music
+                            media_content_id: !lambda |-
+                              return id(last_played_url);
+                    else:
+                      - homeassistant.service:
+                          service: media_player.play_media
+                          data:
+                            entity_id: ${media_player_entity}
+                            media_content_type: music
+                            media_content_id: !lambda |-
+                              return id(last_played_url);
+              else:
+                - logger.log: "HA automations enabled - skipping play_media"
         else:
           - logger.log: "Long press - no URL to restart"
 

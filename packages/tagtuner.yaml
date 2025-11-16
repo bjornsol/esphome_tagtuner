@@ -34,106 +34,106 @@ logger:
 # API to expose services to Home Assistant
 api:
   services:
-  # Write NFC tag services
-  - service: write_music_tag
-    variables:
-      music_url: string
-      music_info: string
-    then:
-    - light.turn_on:
-        id: activity_led
-        brightness: ${led_brightness}
-        red: 100%
-        green: 0%
-        blue: 0%
-    - lambda: |-
-        auto message = new nfc::NdefMessage();
-        std::string uri = "";
-        std::string text = "";
-        uri += music_url;
-        text += music_info;
+    # Write NFC tag services
+    - service: write_music_tag
+      variables:
+        music_url: string
+        music_info: string
+      then:
+        - light.turn_on:
+            id: activity_led
+            brightness: ${led_brightness}
+            red: 100%
+            green: 0%
+            blue: 0%
+        - lambda: |-
+            auto message = new nfc::NdefMessage();
+            std::string uri = "";
+            std::string text = "";
+            uri += music_url;
+            text += music_info;
 
-        // Strip ? and everything after
-        size_t pos = uri.find('?');
-        if (pos != std::string::npos) {
-          uri = uri.substr(0, pos);
-        }
-    
-        if ( !uri.empty() ) {
-          message->add_uri_record(uri);
-        }
-        if ( !text.empty() ) {
-          message->add_text_record(text);
-        }
-        id(pn532_board).write_mode(message);
-    - wait_until:
-        not:
-          pn532.is_writing:
-    - light.turn_off:
-        id: activity_led
+            // Strip ? and everything after
+            size_t pos = uri.find('?');
+            if (pos != std::string::npos) {
+              uri = uri.substr(0, pos);
+            }
+        
+            if ( !uri.empty() ) {
+              message->add_uri_record(uri);
+            }
+            if ( !text.empty() ) {
+              message->add_text_record(text);
+            }
+            id(pn532_board).write_mode(message);
+        - wait_until:
+            not:
+              pn532.is_writing:
+        - light.turn_off:
+            id: activity_led
 
-  # Write printing tag service
-  - service: write_printing_tag
-    variables:
-      filename: string
-      file_info: string
-    then:
-    - light.turn_on:
-        id: activity_led
-        brightness: ${led_brightness}
-        red: 100%
-        green: 0%
-        blue: 0%
-    - lambda: |-
-        auto message = new nfc::NdefMessage();
-        std::string uri = "file://";
-        std::string text = "";
-        uri += filename;
-        text += file_info;
-        if ( !filename.empty() ) {
-          message->add_uri_record(uri);
-        }
-        if ( !file_info.empty() ) {
-          message->add_text_record(text);
-        }
-        id(pn532_board).write_mode(message);
-    - wait_until:
-        not:
-          pn532.is_writing:
-    - light.turn_off:
-        id: activity_led
+    # Write printing tag service
+    - service: write_printing_tag
+      variables:
+        filename: string
+        file_info: string
+      then:
+        - light.turn_on:
+            id: activity_led
+            brightness: ${led_brightness}
+            red: 100%
+            green: 0%
+            blue: 0%
+        - lambda: |-
+            auto message = new nfc::NdefMessage();
+            std::string uri = "file://";
+            std::string text = "";
+            uri += filename;
+            text += file_info;
+            if ( !filename.empty() ) {
+              message->add_uri_record(uri);
+            }
+            if ( !file_info.empty() ) {
+              message->add_text_record(text);
+            }
+            id(pn532_board).write_mode(message);
+        - wait_until:
+            not:
+              pn532.is_writing:
+        - light.turn_off:
+            id: activity_led
 
-  # Write color tag service
-  - service: write_color_tag
-    variables:
-      color_code: string
-      color_name: string
-    then:
-    - light.turn_on:
-        id: activity_led
-        brightness: ${led_brightness}
-        red: 100%
-        green: 0%
-        blue: 0%
-    - lambda: |-
-        auto message = new nfc::NdefMessage();
-        std::string uri = "color://";
-        std::string text = "";
-        uri += color_code;
-        text += color_name;
-        if ( !color_code.empty() ) {
-          message->add_uri_record(uri);
-        }
-        if ( !text.empty() ) {
-          message->add_text_record(text);
-        }
-        id(pn532_board).write_mode(message);
-        ESP_LOGI("tagwriter", "Writing color tag: %s (%s)", uri.c_str(), text.c_str());
-    - wait_until:
-        not:
-          pn532.is_writing:
-    - light.turn_off:
-        id: activity_led
+    # Write color tag service
+    - service: write_color_tag
+      variables:
+        color_code: string
+        color_name: string
+      then:
+        - light.turn_on:
+            id: activity_led
+            brightness: ${led_brightness}
+            red: 100%
+            green: 0%
+            blue: 0%
+        - lambda: |-
+            auto message = new nfc::NdefMessage();
+            std::string uri = "color://";
+            std::string text = "";
+            uri += color_code;
+            text += color_name;
+            if ( !color_code.empty() ) {
+              message->add_uri_record(uri);
+            }
+            if ( !text.empty() ) {
+              message->add_text_record(text);
+            }
+            id(pn532_board).write_mode(message);
+            ESP_LOGI("tagwriter", "Writing color tag: %s (%s)", uri.c_str(), text.c_str());
+        - wait_until:
+            not:
+              pn532.is_writing:
+        - light.turn_off:
+            id: activity_led
 
 # Main configuration
 esphome:
@@ -191,6 +191,17 @@ globals:
     type: std::string
     restore_value: yes
     initial_value: ''
+  # Lambda result holder for simplified case handling
+  - id: lambda_result
+    type: std::string
+  - id: last_scan_time
+    type: unsigned long
+    restore_value: no
+    initial_value: '0'
+  - id: rate_limit_ms
+    type: unsigned long
+    restore_value: no
+    initial_value: '2000'
 
 # Event handling scripts
 script:
@@ -202,15 +213,36 @@ script:
       # Pause playback on tag removal for music tags
       - if:
           condition:
-              lambda: 'return id(source) == "spotify" || id(source) == "amusic" || id(source) == "sonos";'
+            lambda: 'return id(source) == "spotify" || id(source) == "amusic" || id(source) == "sonos";'
           then:
-            - logger.log:
-                format: "Tag removed - pausing: %s"
-                args: ['id(last_played_info).c_str()']
-            - homeassistant.service:
-                service: media_player.media_pause
-                data:
-                  entity_id: ${media_player_entity}
+            - if:
+                condition:
+                  lambda: 'return ${pause_on_tag_remove};'
+                then:
+                  - logger.log:
+                      format: "Tag removed - pausing: %s"
+                      args: ['id(last_played_info).c_str()']
+                  - if:
+                      condition:
+                        lambda: 'return !${ha_automation_events};'
+                      then:
+                        - if:
+                            condition:
+                              lambda: 'return ${area_not_player};'
+                            then:
+                              - homeassistant.service:
+                                  service: media_player.media_pause
+                                  data:
+                                    area_id: ${area_entity}
+                            else:
+                              - homeassistant.service:
+                                  service: media_player.media_pause
+                                  data:
+                                    entity_id: ${media_player_entity}
+                      else:
+                        - logger.log: "HA automations enabled - skipping media pause"
+                else:
+                  - logger.log: "Tag removed - pause on tag remove disabled, no action taken"
             - binary_sensor.template.publish:
                 id: tag_present
                 state: false
@@ -219,8 +251,8 @@ script:
             - light.turn_off:
                 id: activity_led
                 transition_length: 0ms
-      # Handle tag removal for non-music tags
-          else:
+      
+          else: # Handle tag removal for non-music tags
             - logger.log: "Tag removed - no action taken for non-music tag"
             - binary_sensor.template.publish:
                 id: tag_present
@@ -229,101 +261,122 @@ script:
                 event: esphome.tag_removed
   - id: handle_tag_read
     then:
-      - text_sensor.template.publish:
-          id: tagtune_status
-          state: "tag read"
-      # Visual feedback on tag read success/failure
-      - if:
-          condition:
-            lambda: 'return id(read_success);'
-          then:
+      - if: # Handle LED action here: If rate limited, do nothing. Else, if read sucess, flash green. Else (read failure), flash red
+        condition:
+          lambda: 'return (id(lambda_result)!="rate_limited");'
+        then:
+        - if:
+            condition:
+              lambda: 'return id(read_success);'
+            then:
             - light.turn_on:
                 id: activity_led
-                brightness: ${led_brightness}
+                brightness: 100%
                 red: 0%
                 green: 100%
                 blue: 0%
-          else:
+                flash_length: 500ms
+            else:
             - light.turn_on:
                 id: activity_led
-                brightness: ${led_brightness}
+                brightness: 100%
                 red: 100%
                 green: 0%
                 blue: 0%
                 flash_length: 500ms
-      - if:
+        
+      - if: # Lambda result = music tag
           condition:
-            lambda: 'return ( id(source)=="uid" || id(source)=="error" );'
+            lambda: 'return (id(lambda_result)=="music_tag");'
           then:
-            - homeassistant.tag_scanned: !lambda |-
-                ESP_LOGD("tagreader", "No HA NDEF, using UID");
-                return id(tag_uid); // Use the stored UID;
-          # Handle tag based on source type
-          else:
-          # Print tag event
-            - if:
-                condition:
-                  lambda: 'return ( id(source)=="file" );'
-                then:
-                  - homeassistant.event:
-                      event: esphome.print_tag
-                      data:
-                        reader: !lambda 'return App.get_name().c_str();'
-                        source: !lambda 'return id(source);'
-                        url: !lambda 'return id(url).erase(0,7);' # erasing 'file://'
-                        info: !lambda 'return id(info);'
-                  - light.turn_off:
-                      id: activity_led
-                else:
-                # Color tag event
-                - if:
-                    condition:
-                        lambda: 'return ( id(source)=="color" );'
-                    then:
-                      - homeassistant.event:
-                          event: esphome.color_tag
-                          data:
-                            reader: !lambda 'return App.get_name().c_str();'
-                            source: !lambda 'return id(source);'
-                            url: !lambda 'return id(url).erase(0,8);' # erasing 'color://'
-                            info: !lambda 'return id(info);'
-                      - light.turn_off:
-                          id: activity_led
-                  else:
-                    # Music tag (Apple Music, Spotify, Sonos)
-                    - homeassistant.event:
-                        event: esphome.music_tag
-                        data:
-                          reader: !lambda 'return App.get_name().c_str();'
-                          source: !lambda 'return id(source);'
-                          url: !lambda 'return id(url);'
-                          info: !lambda 'return id(info);'
-                      
-                    # Play new URL or resume last played
+          - homeassistant.event:
+              event: esphome.music_tag
+              data:
+                reader: !lambda 'return App.get_name().c_str();'
+                source: !lambda 'return id(source);'
+                url: !lambda 'return id(url);'
+                info: !lambda 'return id(info);'
+          - if: # Play new URL or resume last played
+            condition:
+              lambda: 'return id(url) != id(last_played_url);'
+            then:
+              - logger.log: 
+                  format: "New tag detected - playing: %s" 
+                  args: ['id(info).c_str()']
+              - if:
+                  condition:
+                    lambda: 'return !${ha_automation_events};'
+                  then:
                     - if:
-                          condition:
-                            lambda: 'return id(url) != id(last_played_url);'
-                          then:
-                            - logger.log: 
-                                format: "New tag detected - playing: %s" 
-                                args: ['id(info).c_str()']
-                            - homeassistant.service:
-                                service: media_player.play_media
-                                data:
-                                  entity_id: ${media_player_entity}
-                                  media_content_type: music
-                                  media_content_id: !lambda 'return id(url);'
-                            - lambda: |-
-                                id(last_played_url) = id(url);
-                                id(last_played_info) = id(info);
-                          else:
-                            - logger.log: 
-                                format: "Same tag resuming: %s" 
-                                args: ['id(info).c_str()']
-                            - homeassistant.service:
-                                service: media_player.media_play
-                                data:
-                                  entity_id: ${media_player_entity}
+                        condition:
+                          lambda: 'return ${area_not_player};'
+                        then:
+                          - homeassistant.service:
+                              service: media_player.play_media
+                              data:
+                                area_id: ${area_entity}
+                                media_content_type: music
+                                media_content_id: !lambda 'return id(url);'
+                        else:
+                          - homeassistant.service:
+                              service: media_player.play_media
+                              data:
+                                entity_id: ${media_player_entity}
+                                media_content_type: music
+                                media_content_id: !lambda 'return id(url);'
+                  else:
+                    - logger.log: "HA automations enabled - skipping play_media"
+              - lambda: |-
+                  id(last_played_url) = id(url);
+                  id(last_played_info) = id(info);
+            else:
+              - logger.log: 
+                  format: "Same tag resuming: %s" 
+                  args: ['id(info).c_str()']
+              - if:
+                  condition:
+                    lambda: 'return !${ha_automation_events};'
+                  then:
+                    - if:
+                        condition:
+                          lambda: 'return ${area_not_player};'
+                        then:
+                          - homeassistant.service:
+                              service: media_player.media_play
+                              data:
+                                area_id: ${area_entity}
+                        else:
+                          - homeassistant.service:
+                              service: media_player.media_play
+                              data:
+                                entity_id: ${media_player_entity}
+                  else:
+                    - logger.log: "HA automations enabled - skipping media_play"
+
+      - if: # Lambda result = printing tag
+          condition:
+            lambda: 'return (id(lambda_result)=="printing_tag");'
+          then:
+          - homeassistant.event:
+              event: esphome.print_tag
+              data:
+                reader: !lambda 'return App.get_name().c_str();'
+                source: !lambda 'return id(source);'
+                url: !lambda 'return id(url).erase(0,7);' # erasing 'file://'
+                info: !lambda 'return id(info);'
+
+      - if: # Lambda result = color tag
+          condition:
+            lambda: 'return (id(lambda_result)=="color_tag");'
+          then:
+          - homeassistant.event:
+              event: esphome.color_tag
+              data:
+                reader: !lambda 'return App.get_name().c_str();'
+                source: !lambda 'return id(source);'
+                url: !lambda 'return id(url).erase(0,8);' # erasing 'color://'
+                info: !lambda 'return id(info);'
+  
 
 # Switch to enable/disable activity LED
 switch:
@@ -394,22 +447,27 @@ pn532_spi:
                 if (payload.compare(0, strlen(applemusic_prefix), applemusic_prefix)==0){
                   ESP_LOGD("tagreader", "Found Apple Music tag NDEF");
                   id(source)="amusic";
+                  id(lambda_result)="music_tag";
                 }
                 else if (payload.compare(0, strlen(spotify_prefix), spotify_prefix)==0){
                   ESP_LOGD("tagreader", "Found Spotify tag NDEF");
                   id(source)="spotify";
+                  id(lambda_result)="music_tag";
                 }
                 else if (payload.compare(0, strlen(sonos_prefix), sonos_prefix)==0){
                   ESP_LOGD("tagreader", "Found Sonos app tag NDEF");
                   id(source)="sonos";
+                  id(lambda_result)="music_tag";
                 }
                 else if (payload.compare(0, strlen(printfile_prefix), printfile_prefix)==0){
                   ESP_LOGD("tagreader", "Found print tag NDEF");
                   id(source)="file";
+                  id(lambda_result)="print_tag";
                 }
                 else if (payload.compare(0, strlen(colortag_prefix), colortag_prefix)==0){
                   ESP_LOGD("tagreader", "Found color tag NDEF");
                   id(source)="color";
+                  id(lambda_result)="color_tag";
                 }
               }
               else if (type == "T" ) {
