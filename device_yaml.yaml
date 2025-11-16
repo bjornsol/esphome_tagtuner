@@ -35,6 +35,8 @@ substitutions:
   # Max volume limit 
   max_volume: '0.7'
   # Functionallity config ----------------------|
+    # Rate limiting for tag reads (ms)
+  rate_limited: true
     # Pause playback when tag is removed
   pause_on_tag_remove: true
     # Ignore tags that are written by the player itself 

@@ -217,18 +217,18 @@ script:
           then:
             - if:
                 condition:
-                  lambda: 'return ${pause_on_tag_remove};'
+                  lambda: 'return "${pause_on_tag_remove}" == "true";'
                 then:
                   - logger.log:
                       format: "Tag removed - pausing: %s"
                       args: ['id(last_played_info).c_str()']
                   - if:
                       condition:
-                        lambda: 'return !${ha_automation_events};'
+                        lambda: 'return "${ha_automation_events}" != "true";'
                       then:
                         - if:
                             condition:
-                              lambda: 'return ${area_not_player};'
+                              lambda: 'return "${area_not_player}" == "true";'
                             then:
                               - homeassistant.service:
                                   service: media_player.media_pause
@@ -305,11 +305,11 @@ script:
                       args: ['id(info).c_str()']
                   - if:
                       condition:
-                        lambda: 'return !${ha_automation_events};'
+                        lambda: 'return "${ha_automation_events}" != "true";'
                       then:
                         - if:
                             condition:
-                              lambda: 'return ${area_not_player};'
+                              lambda: 'return "${area_not_player}" == "true";'
                             then:
                               - homeassistant.service:
                                   service: media_player.play_media
@@ -335,11 +335,11 @@ script:
                       args: ['id(info).c_str()']
                   - if:
                       condition:
-                        lambda: 'return !${ha_automation_events};'
+                        lambda: 'return "${ha_automation_events}" != "true";'
                       then:
                         - if:
                             condition:
-                              lambda: 'return ${area_not_player};'
+                              lambda: 'return "${area_not_player}" == "true";'
                             then:
                               - homeassistant.service:
                                   service: media_player.media_play

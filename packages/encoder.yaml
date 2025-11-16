@@ -56,11 +56,11 @@ script:
             if (id(volume_level) > ${max_volume}) id(volume_level) = ${max_volume};
       - if:
           condition:
-            lambda: 'return !${ha_automation_events};'
+            lambda: 'return "${ha_automation_events}" != "true";'
           then:
             - if:
                 condition:
-                  lambda: 'return ${area_not_player};'
+                  lambda: 'return "${area_not_player}" == "true";'
                 then:
                   - homeassistant.service:
                       service: media_player.volume_set
@@ -100,11 +100,11 @@ script:
             if (id(volume_level) < 0.0) id(volume_level) = 0.0;
       - if:
           condition:
-            lambda: 'return !${ha_automation_events};'
+            lambda: 'return "${ha_automation_events}" != "true";'
           then:
             - if:
                 condition:
-                  lambda: 'return ${area_not_player};'
+                  lambda: 'return "${area_not_player}" == "true";'
                 then:
                   - homeassistant.service:
                       service: media_player.volume_set
@@ -140,11 +140,11 @@ script:
     then:
       - if:
           condition:
-            lambda: 'return !${ha_automation_events};'
+            lambda: 'return "${ha_automation_events}" != "true";'
           then:
             - if:
                 condition:
-                  lambda: 'return ${area_not_player};'
+                  lambda: 'return "${area_not_player}" == "true";'
                 then:
                   - homeassistant.service:
                       service: media_player.media_previous_track
@@ -190,11 +190,11 @@ script:
     then:
       - if:
           condition:
-            lambda: 'return !${ha_automation_events};'
+            lambda: 'return "${ha_automation_events}" != "true";'
           then:
             - if:
                 condition:
-                  lambda: 'return ${area_not_player};'
+                  lambda: 'return "${area_not_player}" == "true";'
                 then:
                   - homeassistant.service:
                       service: media_player.media_next_track
@@ -232,11 +232,11 @@ script:
     then:
       - if:
           condition:
-            lambda: 'return !${ha_automation_events};'
+            lambda: 'return "${ha_automation_events}" != "true";'
           then:
             - if:
                 condition:
-                  lambda: 'return ${area_not_player};'
+                  lambda: 'return "${area_not_player}" == "true";'
                 then:
                   - homeassistant.service:
                       service: media_player.media_play_pause
@@ -284,11 +284,11 @@ script:
               args: ['id(last_played_info).c_str()']
           - if:
               condition:
-                lambda: 'return !${ha_automation_events};'
+                lambda: 'return "${ha_automation_events}" != "true";'
               then:
                 - if:
                     condition:
-                      lambda: 'return ${area_not_player};'
+                      lambda: 'return "${area_not_player}" == "true";'
                     then:
                       - homeassistant.service:
                           service: media_player.play_media
